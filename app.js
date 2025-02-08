@@ -1,5 +1,8 @@
 const express = require("express");
 const loginRoutes = require("./routes/loginRoutes");
+const usersRoutes = require("./routes/usersRoutes");
+const recipeRoutes = require("./routes/recipeRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 
@@ -26,6 +29,9 @@ const corsOptions = {
 app.use(cors());
 
 app.use("/", loginRoutes);
+app.use("/users", usersRoutes);
+app.use("/recipe", recipeRoutes);
+app.use("/review", reviewRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
