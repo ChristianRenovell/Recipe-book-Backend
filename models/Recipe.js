@@ -21,6 +21,10 @@ const Recipe = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    category: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     description: {
       type: DataTypes.TEXT,
     },
