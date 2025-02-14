@@ -1,4 +1,5 @@
 const { Recipe, Ingredient } = require("../models/associations");
+const cloudinary = require("../utils/cloudinary");
 
 exports.createRecipe = async (req, res) => {
   try {
@@ -9,9 +10,14 @@ exports.createRecipe = async (req, res) => {
       category,
       description,
       preparation,
-      image_url,
       ingredients,
     } = req.body;
+
+    if (req.files.files.tempFilePath) {
+      resultUpImage = await cloudinary.uploadImage(
+        req.files.files.tempFilePath
+      );
+    }
 
     const newRecipe = await Recipe.create({
       user_id,
@@ -20,9 +26,9 @@ exports.createRecipe = async (req, res) => {
       category,
       description,
       preparation,
-      image_url,
+      image_url: resultUpImage.url,
     });
-
+    console.log(newRecipe);
     if (ingredients && ingredients.length > 0) {
       const ingredientsData = ingredients.map((ing) => ({
         recipe_id: newRecipe.recipe_id,
@@ -30,6 +36,7 @@ exports.createRecipe = async (req, res) => {
         quantity: ing.quantity,
         observations: ing.observations,
       }));
+
       await Ingredient.bulkCreate(ingredientsData);
     }
 
@@ -37,6 +44,7 @@ exports.createRecipe = async (req, res) => {
       .status(201)
       .json({ message: "Receta creada con éxito", recipe: newRecipe });
   } catch (error) {
+    console.log(error);
     res.status(400).json({ error: error.message });
   }
 };
