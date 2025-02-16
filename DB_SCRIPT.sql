@@ -2,7 +2,7 @@ CREATE DATABASE recipes_app;
 
 CREATE TABLE users (
     uid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id INT NOT NULL unique,
+    user_id VARCHAR(255) NOT NULL unique,
     username VARCHAR(255) NOT NULL UNIQUE,
     image_url TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -11,7 +11,7 @@ CREATE TABLE users (
 
 CREATE TABLE recipes (
     recipe_id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
     username VARCHAR(255) NOT NULL,
     title VARCHAR(255) NOT NULL,
     category INT NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE ingredients (
 CREATE TABLE reviews (
     review_id SERIAL PRIMARY KEY,
     recipe_id INT NOT NULL,
-    user_id INT NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
     rating INT CHECK (rating >= 1 AND rating <= 5),
     review_text TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

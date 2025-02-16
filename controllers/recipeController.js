@@ -1,22 +1,27 @@
 const { Recipe, Ingredient } = require("../models/associations");
 const cloudinary = require("../utils/cloudinary");
+const fs = require("fs");
+const path = require("path");
+const jwt = require("jsonwebtoken");
 
 exports.createRecipe = async (req, res) => {
-  try {
-    const {
-      user_id,
-      username,
-      title,
-      category,
-      description,
-      preparation,
-      ingredients,
-    } = req.body;
+  let tempFilePath = null;
+  let resultUpImage;
 
-    if (req.files.files.tempFilePath) {
-      resultUpImage = await cloudinary.uploadImage(
-        req.files.files.tempFilePath
-      );
+  try {
+    const authHeader = req.headers.authorization;
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_TOKEN);
+
+    const user_id = decoded.uid;
+
+    const { username, title, category, description, preparation, ingredients } =
+      req.body;
+
+    if (req.files?.files?.tempFilePath) {
+      tempFilePath = req.files.files.tempFilePath;
+      resultUpImage = await cloudinary.uploadImage(tempFilePath);
     }
 
     const newRecipe = await Recipe.create({
@@ -26,11 +31,12 @@ exports.createRecipe = async (req, res) => {
       category,
       description,
       preparation,
-      image_url: resultUpImage.url,
+      image_url: resultUpImage?.url ? resultUpImage.url : "",
     });
-    console.log(newRecipe);
-    if (ingredients && ingredients.length > 0) {
-      const ingredientsData = ingredients.map((ing) => ({
+
+    const ingredientsParse = JSON.parse(ingredients);
+    if (ingredientsParse?.length > 0) {
+      const ingredientsData = ingredientsParse.map((ing) => ({
         recipe_id: newRecipe.recipe_id,
         ingredient: ing.ingredient,
         quantity: ing.quantity,
@@ -46,6 +52,17 @@ exports.createRecipe = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(400).json({ error: error.message });
+  } finally {
+    if (tempFilePath) {
+      fs.unlink(tempFilePath, (err) => {
+        if (err) console.error("Error al eliminar el archivo temporal:", err);
+        else
+          console.log(
+            "Archivo temporal eliminado correctamente:",
+            tempFilePath
+          );
+      });
+    }
   }
 };
 

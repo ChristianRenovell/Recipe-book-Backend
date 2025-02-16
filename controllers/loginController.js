@@ -16,7 +16,3 @@ exports.login = async (req, res) => {
     res.status(401).json({ success: false, error: "Usuario no encontrado" });
   }
 };
-
-exports.test = async (req, res) => {
-  res.json({ state: "ok" });
-};

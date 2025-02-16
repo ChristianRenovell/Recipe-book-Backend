@@ -10,7 +10,7 @@ const Ingredient = sequelize.define(
       primaryKey: true,
     },
     recipe_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
     },
     ingredient: {
