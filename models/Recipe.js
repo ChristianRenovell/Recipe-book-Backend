@@ -17,6 +17,10 @@ const Recipe = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    author: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     title: {
       type: DataTypes.STRING,
       allowNull: false,

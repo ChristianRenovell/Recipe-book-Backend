@@ -3,6 +3,7 @@ const cloudinary = require("../utils/cloudinary");
 const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken");
+const { Op } = require("sequelize");
 
 exports.createRecipe = async (req, res) => {
   let tempFilePath = null;
@@ -135,27 +136,33 @@ exports.getAllRecipesByRecipeId = async (req, res) => {
 
 exports.filterRecipes = async (req, res) => {
   try {
-    const { user_id, category } = req.body;
+    const { author, category, title } = req.body;
     const filter = {};
-    if (user_id) {
-      filter.user_id = user_id;
+    if (author) {
+      filter.author = author;
     }
     if (category) {
       filter.category = category;
     }
 
-    const recipes = await Recipe.findAll({
-      where: filter,
-      attributes: ["title", "image_url", "username", "category"],
-    });
-
-    if (recipes.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No se encontraron recetas con los criterios dados" });
+    let nameCondition = null;
+    if (title) {
+      nameCondition = {
+        title: {
+          [Op.iLike]: `%${title}%`,
+        },
+      };
     }
 
-    res.status(200).json(recipes);
+    const recipes = await Recipe.findAll({
+      where: {
+        ...filter,
+        ...(nameCondition ? nameCondition : {}),
+      },
+      attributes: ["title", "image_url", "author", "category"],
+    });
+
+    res.status(200).json(recipes || []);
   } catch (error) {
     console.error("Error al obtener recetas:", error);
     res.status(500).json({ error: "Error al obtener recetas" });
