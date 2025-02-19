@@ -70,7 +70,7 @@ exports.createRecipe = async (req, res) => {
 exports.getAllRecipes = async (req, res) => {
   try {
     const recipes = await Recipe.findAll({
-      attributes: ["title", "image_url", "username", "category"],
+      attributes: ["recipe_id", "title", "image_url", "username", "category"],
     });
 
     res.status(200).json(recipes);
@@ -85,7 +85,7 @@ exports.getAllRecipesByUserId = async (req, res) => {
 
     const recipes = await Recipe.findAll({
       where: { user_id },
-      attributes: ["title", "image_url", "username", "category"],
+      attributes: ["recipe_id", "title", "image_url", "username", "category"],
       include: [
         {
           model: Ingredient,
@@ -111,7 +111,7 @@ exports.getAllRecipesByRecipeId = async (req, res) => {
   try {
     const { recipe_id } = req.params;
 
-    const recipes = await Recipe.findAll({
+    const recipes = await Recipe.findOne({
       where: { recipe_id },
       include: [
         {
@@ -159,7 +159,7 @@ exports.filterRecipes = async (req, res) => {
         ...filter,
         ...(nameCondition ? nameCondition : {}),
       },
-      attributes: ["title", "image_url", "author", "category"],
+      attributes: ["recipe_id", "title", "image_url", "author", "category"],
     });
 
     res.status(200).json(recipes || []);
