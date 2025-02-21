@@ -168,3 +168,81 @@ exports.filterRecipes = async (req, res) => {
     res.status(500).json({ error: "Error al obtener recetas" });
   }
 };
+
+exports.updateRecipe = async (req, res) => {
+  let tempFilePath = null;
+  let resultUpImage;
+
+  try {
+    const authHeader = req.headers.authorization;
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_TOKEN);
+
+    const user_id = decoded.uid;
+
+    const {
+      recipe_id,
+      username,
+      title,
+      category,
+      description,
+      preparation,
+      ingredients,
+    } = req.body;
+
+    const recipe = await Recipe.findOne({ where: { recipe_id, user_id } });
+
+    if (!recipe) {
+      return res
+        .status(404)
+        .json({ error: "Receta no encontrada o no pertenece al usuario" });
+    }
+    console.log(req.files);
+    if (req.files?.files?.tempFilePath) {
+      tempFilePath = req.files.files.tempFilePath;
+      resultUpImage = await cloudinary.uploadImage(tempFilePath);
+    }
+    console.log(resultUpImage);
+    recipe.username = username || recipe.username;
+    recipe.title = title || recipe.title;
+    recipe.category = category || recipe.category;
+    recipe.description = description || recipe.description;
+    recipe.preparation = preparation || recipe.preparation;
+    recipe.image_url = resultUpImage?.url
+      ? resultUpImage.url
+      : recipe.image_url;
+
+    await recipe.save();
+
+    const ingredientsParse = JSON.parse(ingredients);
+    if (ingredientsParse?.length > 0) {
+      await Ingredient.destroy({ where: { recipe_id: recipe.recipe_id } });
+
+      const ingredientsData = ingredientsParse.map((ing) => ({
+        recipe_id: recipe.recipe_id,
+        ingredient: ing.ingredient,
+        quantity: ing.quantity,
+        observations: ing.observations,
+      }));
+
+      await Ingredient.bulkCreate(ingredientsData);
+    }
+
+    res.status(200).json({ message: "Receta actualizada con éxito", recipe });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ error: error.message });
+  } finally {
+    if (tempFilePath) {
+      fs.unlink(tempFilePath, (err) => {
+        if (err) console.error("Error al eliminar el archivo temporal:", err);
+        else
+          console.log(
+            "Archivo temporal eliminado correctamente:",
+            tempFilePath
+          );
+      });
+    }
+  }
+};

@@ -4,6 +4,7 @@ const recipeController = require("../controllers/recipeController");
 const { verifyToken } = require("../middleware/authMiddleware");
 
 router.post("/", verifyToken, recipeController.createRecipe);
+router.put("/", verifyToken, recipeController.updateRecipe);
 router.get("/get-all", recipeController.getAllRecipes);
 router.get("/get-by-user-id/:user_id", recipeController.getAllRecipesByUserId);
 router.get(
