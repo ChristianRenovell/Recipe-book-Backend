@@ -198,12 +198,12 @@ exports.updateRecipe = async (req, res) => {
         .status(404)
         .json({ error: "Receta no encontrada o no pertenece al usuario" });
     }
-    console.log(req.files);
+    console.log(req.files?.files);
     if (req.files?.files?.tempFilePath) {
       tempFilePath = req.files.files.tempFilePath;
       resultUpImage = await cloudinary.uploadImage(tempFilePath);
     }
-    console.log(resultUpImage);
+
     recipe.username = username || recipe.username;
     recipe.title = title || recipe.title;
     recipe.category = category || recipe.category;
@@ -212,7 +212,6 @@ exports.updateRecipe = async (req, res) => {
     recipe.image_url = resultUpImage?.url
       ? resultUpImage.url
       : recipe.image_url;
-
     await recipe.save();
 
     const ingredientsParse = JSON.parse(ingredients);
@@ -244,5 +243,35 @@ exports.updateRecipe = async (req, res) => {
           );
       });
     }
+  }
+};
+
+exports.deleteRecipe = async (req, res) => {
+  try {
+    const { recipe_id } = req.params;
+
+    const recipe = await Recipe.findOne({ where: { recipe_id } });
+
+    if (!recipe) {
+      return res.status(404).json({ error: "Receta no encontrada" });
+    }
+
+    const imageUrl = recipe.image_url;
+
+    await Recipe.destroy({ where: { recipe_id } });
+
+    if (imageUrl) {
+      const publicId = imageUrl.split("/").pop().split(".")[0];
+      await cloudinary.uploader.destroy(publicId);
+    }
+
+    await Ingredient.destroy({ where: { recipe_id } });
+
+    res
+      .status(200)
+      .json({ message: "Receta y su imagen eliminadas con éxito" });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ error: error.message });
   }
 };
