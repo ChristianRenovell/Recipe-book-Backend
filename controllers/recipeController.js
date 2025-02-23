@@ -248,8 +248,9 @@ exports.updateRecipe = async (req, res) => {
 
 exports.deleteRecipe = async (req, res) => {
   try {
+    console.log("entro");
     const { recipe_id } = req.params;
-
+    console.log(recipe_id);
     const recipe = await Recipe.findOne({ where: { recipe_id } });
 
     if (!recipe) {
@@ -257,15 +258,20 @@ exports.deleteRecipe = async (req, res) => {
     }
 
     const imageUrl = recipe.image_url;
-
+    console.log(imageUrl);
     await Recipe.destroy({ where: { recipe_id } });
 
-    if (imageUrl) {
-      const publicId = imageUrl.split("/").pop().split(".")[0];
-      await cloudinary.uploader.destroy(publicId);
-    }
+    try {
+      if (imageUrl) {
+        const publicId = imageUrl.split("/").pop().split(".")[0];
+        console.log(publicId);
 
-    await Ingredient.destroy({ where: { recipe_id } });
+        await cloudinary.uploadImage.destroy(publicId);
+      }
+    } catch (error) {
+      console.log(error);
+      res.status(200).json({ message: "Imagen no eliminada" });
+    }
 
     res
       .status(200)
