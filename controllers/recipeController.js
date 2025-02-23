@@ -17,11 +17,19 @@ exports.createRecipe = async (req, res) => {
 
     const user_id = decoded.uid;
 
-    const { username, title, category, description, preparation, ingredients } =
-      req.body;
+    const {
+      username,
+      title,
+      category,
+      description,
+      preparation,
+      ingredients,
+      author,
+    } = req.body;
 
     if (req.files?.files?.tempFilePath) {
       tempFilePath = req.files.files.tempFilePath;
+      console.log(tempFilePath);
       resultUpImage = await cloudinary.uploadImage(tempFilePath);
     }
 
@@ -29,6 +37,7 @@ exports.createRecipe = async (req, res) => {
       user_id,
       username,
       title,
+      author,
       category,
       description,
       preparation,
@@ -70,7 +79,14 @@ exports.createRecipe = async (req, res) => {
 exports.getAllRecipes = async (req, res) => {
   try {
     const recipes = await Recipe.findAll({
-      attributes: ["recipe_id", "title", "image_url", "username", "category"],
+      attributes: [
+        "recipe_id",
+        "title",
+        "image_url",
+        "username",
+        "category",
+        "author",
+      ],
     });
 
     res.status(200).json(recipes);
@@ -159,7 +175,14 @@ exports.filterRecipes = async (req, res) => {
         ...filter,
         ...(nameCondition ? nameCondition : {}),
       },
-      attributes: ["recipe_id", "title", "image_url", "author", "category"],
+      attributes: [
+        "recipe_id",
+        "title",
+        "author",
+        "image_url",
+        "author",
+        "category",
+      ],
     });
 
     res.status(200).json(recipes || []);
@@ -175,10 +198,12 @@ exports.updateRecipe = async (req, res) => {
 
   try {
     const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: "No autorizado" });
+    }
 
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET_TOKEN);
-
     const user_id = decoded.uid;
 
     const {
@@ -189,6 +214,7 @@ exports.updateRecipe = async (req, res) => {
       description,
       preparation,
       ingredients,
+      author,
     } = req.body;
 
     const recipe = await Recipe.findOne({ where: { recipe_id, user_id } });
@@ -198,49 +224,54 @@ exports.updateRecipe = async (req, res) => {
         .status(404)
         .json({ error: "Receta no encontrada o no pertenece al usuario" });
     }
-    console.log(req.files?.files);
+
     if (req.files?.files?.tempFilePath) {
       tempFilePath = req.files.files.tempFilePath;
-      resultUpImage = await cloudinary.uploadImage(tempFilePath);
+      try {
+        resultUpImage = await cloudinary.uploadImage(tempFilePath);
+      } catch (err) {
+        console.error("Error al subir imagen a Cloudinary:", err);
+      }
     }
 
     recipe.username = username || recipe.username;
     recipe.title = title || recipe.title;
+    recipe.author = author || recipe.author;
     recipe.category = category || recipe.category;
     recipe.description = description || recipe.description;
     recipe.preparation = preparation || recipe.preparation;
-    recipe.image_url = resultUpImage?.url
-      ? resultUpImage.url
-      : recipe.image_url;
+
+    recipe.image_url = resultUpImage?.url || null;
+
     await recipe.save();
 
-    const ingredientsParse = JSON.parse(ingredients);
-    if (ingredientsParse?.length > 0) {
-      await Ingredient.destroy({ where: { recipe_id: recipe.recipe_id } });
+    try {
+      const ingredientsParse = ingredients ? JSON.parse(ingredients) : [];
+      if (Array.isArray(ingredientsParse) && ingredientsParse.length > 0) {
+        await Ingredient.destroy({ where: { recipe_id: recipe.recipe_id } });
 
-      const ingredientsData = ingredientsParse.map((ing) => ({
-        recipe_id: recipe.recipe_id,
-        ingredient: ing.ingredient,
-        quantity: ing.quantity,
-        observations: ing.observations,
-      }));
+        const ingredientsData = ingredientsParse.map((ing) => ({
+          recipe_id: recipe.recipe_id,
+          ingredient: ing.ingredient,
+          quantity: ing.quantity,
+          observations: ing.observations,
+        }));
 
-      await Ingredient.bulkCreate(ingredientsData);
+        await Ingredient.bulkCreate(ingredientsData);
+      }
+    } catch (err) {
+      console.error("Error al procesar ingredientes:", err);
     }
 
     res.status(200).json({ message: "Receta actualizada con éxito", recipe });
   } catch (error) {
-    console.log(error);
+    console.error("Error en updateRecipe:", error);
     res.status(400).json({ error: error.message });
   } finally {
     if (tempFilePath) {
       fs.unlink(tempFilePath, (err) => {
         if (err) console.error("Error al eliminar el archivo temporal:", err);
-        else
-          console.log(
-            "Archivo temporal eliminado correctamente:",
-            tempFilePath
-          );
+        else console.log("Archivo temporal eliminado:", tempFilePath);
       });
     }
   }
@@ -262,12 +293,11 @@ exports.deleteRecipe = async (req, res) => {
     await Recipe.destroy({ where: { recipe_id } });
 
     try {
-      if (imageUrl) {
-        const publicId = imageUrl.split("/").pop().split(".")[0];
-        console.log(publicId);
-
-        await cloudinary.uploadImage.destroy(publicId);
-      }
+      // if (imageUrl) {
+      //   const publicId = imageUrl.split("/").pop().split(".")[0];
+      //   console.log(publicId);
+      //   await cloudinary.uploadImage.destroy(publicId);
+      // }
     } catch (error) {
       console.log(error);
       res.status(200).json({ message: "Imagen no eliminada" });
