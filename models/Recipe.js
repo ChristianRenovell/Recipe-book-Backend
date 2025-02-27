@@ -9,10 +9,6 @@ const Recipe = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
-    user_id: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     username: {
       type: DataTypes.STRING,
       allowNull: true,
