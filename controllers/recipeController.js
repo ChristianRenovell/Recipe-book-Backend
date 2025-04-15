@@ -1,4 +1,4 @@
-const { Recipe, Ingredient } = require("../models/associations");
+const { Recipe, Ingredient, Step } = require("../models/associations");
 const cloudinary = require("../utils/cloudinary");
 const fs = require("fs");
 const path = require("path");
@@ -22,7 +22,6 @@ exports.createRecipe = async (req, res) => {
       title,
       category,
       description,
-      preparation,
       ingredients,
       author,
     } = req.body;
@@ -40,7 +39,6 @@ exports.createRecipe = async (req, res) => {
       author,
       category,
       description,
-      preparation,
       image_url: resultUpImage?.url ? resultUpImage.url : "",
     });
 
@@ -55,6 +53,18 @@ exports.createRecipe = async (req, res) => {
 
       await Ingredient.bulkCreate(ingredientsData);
     }
+
+    const stepsParse = JSON.parse(req.body.steps);
+    if (stepsParse?.length > 0) {
+      const stepsData = stepsParse.map((step, index) => ({
+        recipe_id: newRecipe.recipe_id,
+        step_number: index + 1,
+        step_description: step.step_description,
+      }));
+
+      await Step.bulkCreate(stepsData);
+    }
+
 
     res
       .status(201)
@@ -107,6 +117,10 @@ exports.getAllRecipesByUserId = async (req, res) => {
           model: Ingredient,
           as: "ingredients",
         },
+        {
+          model: Step,
+          as: "steps",
+        },
       ],
     });
 
@@ -133,6 +147,10 @@ exports.getAllRecipesByRecipeId = async (req, res) => {
         {
           model: Ingredient,
           as: "ingredients",
+        },
+        {
+          model: Step,
+          as: "steps",
         },
       ],
     });
@@ -212,17 +230,16 @@ exports.updateRecipe = async (req, res) => {
       title,
       category,
       description,
-      preparation,
       ingredients,
       author,
     } = req.body;
 
-    const recipe = await Recipe.findOne({ where: { recipe_id, user_id } });
+    const recipe = await Recipe.findOne({ where: { recipe_id } });
 
     if (!recipe) {
       return res
         .status(404)
-        .json({ error: "Receta no encontrada o no pertenece al usuario" });
+        .json({ error: "Receta no encontrada" });
     }
 
     if (req.files?.files?.tempFilePath) {
@@ -239,7 +256,6 @@ exports.updateRecipe = async (req, res) => {
     recipe.author = author || recipe.author;
     recipe.category = category || recipe.category;
     recipe.description = description || recipe.description;
-    recipe.preparation = preparation || recipe.preparation;
 
     recipe.image_url = resultUpImage?.url || null;
 
@@ -258,6 +274,21 @@ exports.updateRecipe = async (req, res) => {
         }));
 
         await Ingredient.bulkCreate(ingredientsData);
+      }
+
+      if (req.body.steps) {
+        const stepsParse = JSON.parse(req.body.steps);
+        if (Array.isArray(stepsParse) && stepsParse.length > 0) {
+          await Step.destroy({ where: { recipe_id: recipe.recipe_id } });
+
+          const stepsData = stepsParse.map((ste) => ({
+            recipe_id: recipe.recipe_id,
+            step_number: ste.step_number,
+            step_description: ste.step_description,
+          }));
+
+          await Step.bulkCreate(stepsData);
+        }
       }
     } catch (err) {
       console.error("Error al procesar ingredientes:", err);

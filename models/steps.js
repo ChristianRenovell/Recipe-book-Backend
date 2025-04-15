@@ -1,35 +1,25 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../db/connection");
 
-const Recipe = sequelize.define(
-  "Recipe",
+const Step = sequelize.define(
+  "Step",
   {
-    recipe_id: {
+    step_id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
-    username: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    author: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    title: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    category: {
+    recipe_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    description: {
-      type: DataTypes.TEXT,
+    step_number: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
-    image_url: {
+    step_description: {
       type: DataTypes.TEXT,
+      allowNull: false,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -41,9 +31,10 @@ const Recipe = sequelize.define(
     },
   },
   {
-    tableName: "recipes",
+    tableName: "steps",
     timestamps: false,
   }
 );
 
-module.exports = Recipe;
+
+module.exports = Step;
