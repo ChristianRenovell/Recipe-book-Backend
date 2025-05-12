@@ -242,10 +242,11 @@ exports.updateRecipe = async (req, res) => {
         .json({ error: "Receta no encontrada" });
     }
 
-    if (req.files?.files?.tempFilePath) {
+    if (req.files?.files?.tempFilePath && req.files?.files?.size > 0) {
       tempFilePath = req.files.files.tempFilePath;
       try {
         resultUpImage = await cloudinary.uploadImage(tempFilePath);
+        recipe.image_url = resultUpImage?.url || null;
       } catch (err) {
         console.error("Error al subir imagen a Cloudinary:", err);
       }
@@ -257,7 +258,7 @@ exports.updateRecipe = async (req, res) => {
     recipe.category = category || recipe.category;
     recipe.description = description || recipe.description;
 
-    recipe.image_url = resultUpImage?.url || null;
+    
 
     await recipe.save();
 
@@ -280,7 +281,6 @@ exports.updateRecipe = async (req, res) => {
         const stepsParse = JSON.parse(req.body.steps);
         if (Array.isArray(stepsParse) && stepsParse.length > 0) {
           await Step.destroy({ where: { recipe_id: recipe.recipe_id } });
-
           const stepsData = stepsParse.map((ste) => ({
             recipe_id: recipe.recipe_id,
             step_number: ste.step_number,
