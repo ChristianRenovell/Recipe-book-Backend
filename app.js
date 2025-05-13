@@ -21,18 +21,19 @@ app.use(
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || origin === "https://recetalex.es" || origin === "") {
+    const allowedOrigins = ["https://recetalex.es"];
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
     }
   },
   methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
 };
 
 app.use(cors(corsOptions));
-//app.use(cors());
+app.use(cors());
 
 app.use("/", loginRoutes);
 app.use("/users", usersRoutes);
