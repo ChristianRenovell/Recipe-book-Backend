@@ -21,7 +21,7 @@ app.use(
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || origin === "" || origin === "") {
+    if (!origin || origin === "https://recetalex.es" || origin === "") {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
@@ -31,8 +31,8 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
-//app.use(cors(corsOptions));
-app.use(cors());
+app.use(cors(corsOptions));
+//app.use(cors());
 
 app.use("/", loginRoutes);
 app.use("/users", usersRoutes);
